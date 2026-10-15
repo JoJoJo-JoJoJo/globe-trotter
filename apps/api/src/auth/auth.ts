@@ -3,7 +3,6 @@ import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { db } from "@repo/database";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { passwordSchema } from "@repo/types";
-import { sendVerificationEmail } from "../email/emailService";
 
 const nodeEnv = process.env.NODE_ENV;
 //TODO: Edit condition in below if statement so that it checks for non-test environment AND configured email provider
@@ -58,12 +57,14 @@ export const auth = betterAuth({
   },
   emailVerification: {
     sendVerificationEmail: async ({ user, url }) => {
+      //? Do not await - this is to prevent timing attacks
       void sendVerificationEmail(user.email, url);
     },
     sendOnSignUp: true,
     sendOnSignIn: true,
     autoSignInAfterVerification: true,
     onExistingUserSignUp: async ({ user }) => {
+      //? Do not await - this is to prevent timing attacks
       void sendDuplicateSignUpNotice(user.email);
     },
   },
