@@ -3,7 +3,7 @@ import { Controller, Get } from '@nestjs/common';
 import { Roles, Session, UserSession } from '@thallesp/nestjs-better-auth';
 import { AppService } from './app.service';
 import { SessionDto, toSessionDto } from './dto/session.dto';
-import type { auth } from './lib/auth';
+import type { auth } from './auth/auth';
 
 @Controller()
 export class AppController {

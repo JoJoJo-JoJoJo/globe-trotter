@@ -4,7 +4,7 @@ import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { auth } from './lib/auth';
+import { auth } from './auth/auth';
 
 @Module({
   imports: [DatabaseModule, HealthModule, AuthModule.forRoot({ auth })],

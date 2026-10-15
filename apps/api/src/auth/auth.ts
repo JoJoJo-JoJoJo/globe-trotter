@@ -3,7 +3,7 @@ import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { db } from "@repo/database";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { passwordSchema } from "@repo/types";
-import { sendVerificationEmail } from "./email/emailService";
+import { sendVerificationEmail } from "../email/emailService";
 
 const nodeEnv = process.env.NODE_ENV;
 //TODO: Edit condition in below if statement so that it checks for non-test environment AND configured email provider
