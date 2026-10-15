@@ -3,6 +3,7 @@ import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { db } from "@repo/database";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { passwordSchema } from "@repo/types";
+import { sendVerificationEmail } from "./email/emailService";
 
 const nodeEnv = process.env.NODE_ENV;
 //TODO: Edit condition in below if statement so that it checks for non-test environment AND configured email provider
@@ -56,26 +57,23 @@ export const auth = betterAuth({
     autoSignIn: false,
   },
   emailVerification: {
-    sendVerificationEmail: async ({ user, url, token }, request) => {
-      //TODO: implement real email service before production deployment
-      // For now this is just a stub. When implemented, do not await sending the email to prevent timing attacks.
-      if (process.env.NODE_ENV !== "test") {
-        throw new APIError('INTERNAL_SERVER_ERROR', { message: 'Email service not configured' });
-      }
-      console.log(`[auth] Verification email for ${user.email}: ${url}`);
-      console.log(`[auth] Token: ${token}`);
+    sendVerificationEmail: async ({ user, url }) => {
+      void sendVerificationEmail(user.email, url);
     },
     sendOnSignUp: true,
     sendOnSignIn: true,
     autoSignInAfterVerification: true,
+    onExistingUserSignUp: async ({ user }) => {
+      void sendDuplicateSignUpNotice(user.email);
+    },
   },
   secret,
   database: drizzleAdapter(db, {
-    provider: 'pg',
+    provider: "pg",
   }),
   user: {
     additionalFields: {
-      role: { type: 'string', defaultValue: 'learner', input: false },
+      role: { type: "string", defaultValue: "learner", input: false },
     },
   },
   // Can add app URL here once deployed

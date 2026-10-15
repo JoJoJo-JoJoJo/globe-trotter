@@ -27,6 +27,7 @@
     "dotenv": "^17.4.2",
     "escape-html": "^1.0.3",
     "reflect-metadata": "^0.2.2",
+    "resend": "^6.32.1",
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
