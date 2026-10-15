@@ -3,80 +3,77 @@ import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { db } from "@repo/database";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { passwordSchema } from "@repo/types";
+import { EmailService } from "src/email/email.service";
 
-const nodeEnv = process.env.NODE_ENV;
-//TODO: Edit condition in below if statement so that it checks for non-test environment AND configured email provider
-// if (nodeEnv !== "test") {
-//   throw new APIError("INTERNAL_SERVER_ERROR", { message: "No real email provider configured in a non-test environment." });
-// }
+//? Using a factory function so that the email service can be injected as a parameter rather than imported
+export function createAuth(emailService: EmailService) {
+  const nodeEnv = process.env.NODE_ENV;
+  const emailProvider = process.env.EMAIL_PROVIDER;
+  if (nodeEnv !== "test" && emailProvider !== "resend") {
+    throw new APIError("INTERNAL_SERVER_ERROR", { message: "No real email provider configured in a non-test environment." });
+  }
 
-const secret = process.env.BETTER_AUTH_SECRET;
-if (!secret) {
-  throw new Error(
-    "BETTER_AUTH_SECRET environment variable is required. The value can be generated using the bash cmd 'openssl rand -base64 32'.",
-  );
-}
+  const secret = process.env.BETTER_AUTH_SECRET;
+  if (!secret) {
+    throw new Error(
+      "BETTER_AUTH_SECRET environment variable is required. The value can be generated using the bash cmd 'openssl rand -base64 32'.",
+    );
+  }
 
-const url = process.env.BETTER_AUTH_URL;
-if (!url) {
-  throw new Error("BETTER_AUTH_URL environment variable is required.");
-}
+  const url = process.env.BETTER_AUTH_URL;
+  if (!url) {
+    throw new Error("BETTER_AUTH_URL environment variable is required.");
+  }
 
-const webURL = process.env.WEB_URL
-if (!webURL) {
-  throw new Error("WEB_URL environment variable is required.");
-}
+  const webURL = process.env.WEB_URL;
+  if (!webURL || typeof webURL !== "string") {
+    throw new Error("WEB_URL environment variable is required.");
+  }
 
-export const auth = betterAuth({
-  /* Custom middleware hook needed because Better Auth bypasses the regular NestJS validation pipeline */
-  hooks: {
-    before: createAuthMiddleware(async (ctx) => {
-      if (ctx.path !== "/sign-up/email" && ctx.path !== "/reset-password") return;
+  return betterAuth({
+    /* Custom middleware hook needed because Better Auth bypasses the regular NestJS validation pipeline */
+    hooks: {
+      before: createAuthMiddleware(async (ctx) => {
+        if (ctx.path !== "/sign-up/email" && ctx.path !== "/reset-password") return;
 
-      const password = ctx.body?.password;
-      if (typeof password !== "string") return;
+        const password = ctx.body?.password;
+        if (typeof password !== "string") return;
 
-      const result = passwordSchema.safeParse(password);
-      if (!result.success) {
-        let msg = result.error.issues[0]?.message;
-        
-        if (typeof result.error.issues[0]?.message === "undefined") {
-          msg = "Issue is undefined - no error message available";
+        const result = passwordSchema.safeParse(password);
+        if (!result.success) {
+          const msg = result.error.issues[0]?.message ?? "Invalid password";
+          throw new APIError("BAD_REQUEST", { message: msg });
         }
-
-        throw new APIError("BAD_REQUEST", {
-          message: msg,
-        });
-      }
+      }),
+    },
+    emailAndPassword: {
+      enabled: true,
+      requireEmailVerification: true,
+      autoSignIn: false,
+      onExistingUserSignUp: async ({ user }) => {
+        //? Do not await - this is to prevent timing attacks
+        void emailService.sendDuplicateSignUpNotice(user.email);
+      },
+    },
+    emailVerification: {
+      sendVerificationEmail: async ({ user, url }) => {
+        //? Do not await - this is to prevent timing attacks
+        void emailService.sendVerificationEmail(user.email, url);
+      },
+      sendOnSignUp: true,
+      sendOnSignIn: true,
+      autoSignInAfterVerification: true,
+    },
+    secret,
+    database: drizzleAdapter(db, {
+      provider: "pg",
     }),
-  },
-  emailAndPassword: {
-    enabled: true,
-    requireEmailVerification: true,
-    autoSignIn: false,
-  },
-  emailVerification: {
-    sendVerificationEmail: async ({ user, url }) => {
-      //? Do not await - this is to prevent timing attacks
-      void sendVerificationEmail(user.email, url);
+    user: {
+      additionalFields: {
+        role: { type: "string", defaultValue: "learner", input: false },
+      },
     },
-    sendOnSignUp: true,
-    sendOnSignIn: true,
-    autoSignInAfterVerification: true,
-    onExistingUserSignUp: async ({ user }) => {
-      //? Do not await - this is to prevent timing attacks
-      void sendDuplicateSignUpNotice(user.email);
-    },
-  },
-  secret,
-  database: drizzleAdapter(db, {
-    provider: "pg",
-  }),
-  user: {
-    additionalFields: {
-      role: { type: "string", defaultValue: "learner", input: false },
-    },
-  },
-  // Can add app URL here once deployed
-  trustedOrigins: [webURL]
-});
+    // Can add app URL here once deployed
+    trustedOrigins: [webURL]
+  });
+}
