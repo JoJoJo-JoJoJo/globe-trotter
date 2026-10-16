@@ -66,8 +66,8 @@ export class EmailService {
   }
 
   private async send(options: EmailOptions): Promise<void> {
-    if (process.env.NODE_ENV === "test") {
-      this.logger.log(`[test] Would send "${options.subject}" to ${options.to}`);
+    if (this.provider === "stub") {
+      this.logger.log(`[stub] Would send "${options.subject}" to ${options.to}`);
       return;
     }
 

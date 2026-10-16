@@ -65,6 +65,7 @@ jobs:
         - name: Test
           run: pnpm test
           env:
+            EMAIL_PROVIDER: stub
             NODE_ENV: test
             TEST_DATABASE_URL: postgres://globe-trotter:globetrotter123@localhost:5432/globe_trotter_test
             MIGRATION_TEST_DATABASE_URL: postgres://globe-trotter:globetrotter123@localhost:5432/globe_trotter_migration_test
