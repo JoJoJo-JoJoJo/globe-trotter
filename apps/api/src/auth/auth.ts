@@ -11,7 +11,10 @@ export type Auth = ReturnType<typeof createAuth>;
 export function createAuth(emailService: EmailService) {
   const nodeEnv = process.env.NODE_ENV;
   const emailProvider = process.env.EMAIL_PROVIDER;
-  if (nodeEnv !== "test" && emailProvider !== "resend") {
+
+  const validProviders = ["stub", "smtp", "resend"];
+
+  if (!validProviders.includes(emailProvider ?? "") || (nodeEnv !== "test" && emailProvider === "stub")) {
     throw new APIError("INTERNAL_SERVER_ERROR", { message: "No real email provider configured in a non-test environment." });
   }
 
