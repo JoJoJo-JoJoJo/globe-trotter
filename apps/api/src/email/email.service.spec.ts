@@ -11,6 +11,7 @@ const URLOrigin = "http://localhost:4000";
 describe("EmailService", () => {
   let service: EmailService;
   let configService: Partial<ConfigService>;
+  let mockCreateTransport: jest.MockedFunction<typeof createTransport>;
 
   afterEach(() => {
     jest.clearAllMocks();
@@ -18,6 +19,8 @@ describe("EmailService", () => {
 
   describe("with EMAIL_PROVIDER=stub", () => {
     beforeEach(async () => {
+      mockCreateTransport = createTransport as jest.MockedFunction<typeof createTransport>;
+
       configService = {
         get: jest.fn().mockImplementation((key: string, defaultValue?: unknown) => {
           switch (key) {
@@ -57,9 +60,11 @@ describe("EmailService", () => {
 
   describe("with EMAIL_PROVIDER=smtp", () => {
     const mockSendMail = jest.fn().mockResolvedValue({ messageId: "test-message-id" });
-    mockCreateTransport.mockReturnValue({ sendMail: mockSendMail } as any);
-
+    
     beforeEach(async () => {
+      mockCreateTransport = createTransport as jest.MockedFunction<typeof createTransport>;
+      mockCreateTransport.mockReturnValue({ sendMail: mockSendMail } as any);
+
       configService = {
         get: jest.fn().mockImplementation((key: string, defaultValue?: unknown) => {
           switch (key) {

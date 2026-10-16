@@ -29,12 +29,12 @@ export class EmailService {
     //* Default to local setup - stub + noreply@localhost
     this.provider = this.config.get<string>("EMAIL_PROVIDER", "stub");
     this.fromAddress = this.config.get<string>("EMAIL_FROM", "noreply@localhost");
-    this.betterAuthUrl = this.config.get<string>("BETTER_AUTH_URL", "http://localhost:4000");
+    this.betterAuthUrl = this.config.get<string>("BETTER_AUTH_URL") as string;
 
     //? Set up relevant provider - provider only chosen once in constructor to avoid re-reading process.env on every email sent
     if (this.provider === "resend") {
-      if (!this.betterAuthUrl) {
-        throw new Error("BETTER_AUTH_URL environment variable is required.");
+      if (!this.betterAuthUrl || this.betterAuthUrl === "http://localhost:4000") {
+        throw new Error("BETTER_AUTH_URL must be set to a real domain when EMAIL_PROVIDER=resend");
       }
 
       const apiKey = this.config.get<string>("RESEND_API_KEY");
@@ -45,11 +45,14 @@ export class EmailService {
       }
       this.resend = new Resend(apiKey);
     } else if (this.provider === "smtp") {
+      this.betterAuthUrl = "http://localhost:4000";
       this.smtp = createTransport({
         host: this.config.get<string>("SMTP_HOST", "localhost"),
         port: this.config.get<number>("SMTP_PORT", 1025),
         secure: false,
       });
+    } else {
+      this.betterAuthUrl = "http://localhost:4000";
     }
     //* "stub" falls through with neither transport configured
   }
@@ -60,6 +63,11 @@ export class EmailService {
     
     if (actual !== expected) {
       throw new Error("Verification URL does not match expected origin");
+    }
+
+    const parsed = new URL(url);
+    if (!["http:", "https:"].includes(parsed.protocol)) {
+      throw new Error("Verification URL must use http or https.");
     }
 
     const safeUrl = escapeHtml(url) as string;
@@ -87,32 +95,25 @@ export class EmailService {
       return;
     }
 
-    try {
-      if (this.resend) {
-        await this.resend.emails.send({
-          from: this.fromAddress,
-          to: options.to,
-          subject: options.subject,
-          html: options.html,
-          text: options.text,
-        });
-      } else if (this.smtp) {
-        await this.smtp.sendMail({
-          from: this.fromAddress,
-          to: options.to,
-          subject: options.subject,
-          html: options.html,
-          text: options.text,
-        });
-      } else {
-        this.logger.warn(
-          `No email provider configured (EMAIL_PROVIDER=${this.provider}). Email to ${options.to} was not sent.`
-        );
-      }
-    } catch (err) {
-      //* A failed email should not break sign-up, just warn
-      this.logger.error(
-        `Failed to send "${options.subject}" to ${options.to}: ${(err instanceof Error ? err.message : String(err))}`
+    if (this.resend) {
+      await this.resend.emails.send({
+        from: this.fromAddress,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        text: options.text,
+      });
+    } else if (this.smtp) {
+      await this.smtp.sendMail({
+        from: this.fromAddress,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        text: options.text,
+      });
+    } else {
+      this.logger.warn(
+        `No email provider configured (EMAIL_PROVIDER=${this.provider}). Email to ${options.to} was not sent.`
       );
     }
   }

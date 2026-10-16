@@ -6,7 +6,6 @@ import { createAuth } from "./auth";
 
 @Module({
   imports: [
-    EmailModule,
     BetterAuthModule.forRootAsync({
       imports: [EmailModule],
       useFactory: (emailService: EmailService) => ({

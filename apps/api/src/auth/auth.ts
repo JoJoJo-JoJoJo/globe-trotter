@@ -4,6 +4,7 @@ import { db } from "@repo/database";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { passwordSchema } from "@repo/types";
 import { EmailService } from "src/email/email.service";
+import { Logger } from "@nestjs/common";
 
 export type Auth = ReturnType<typeof createAuth>;
 
@@ -33,6 +34,8 @@ export function createAuth(emailService: EmailService) {
     throw new Error("WEB_URL environment variable is required.");
   }
 
+  const logger = new Logger("Auth");
+
   return betterAuth({
     /* Custom middleware hook needed because Better Auth bypasses the regular NestJS validation pipeline */
     hooks: {
@@ -56,14 +59,16 @@ export function createAuth(emailService: EmailService) {
       onExistingUserSignUp: async ({ user }) => {
         //? Do not await - this is to prevent timing attacks
         void emailService.sendDuplicateSignUpNotice(user.email)
-          .catch(err => console.error('[auth] Unexpected error sending duplicate sign-up notice:', err));
+          .catch(err => logger.error('[auth] Unexpected error sending duplicate sign-up notice:', err));
       },
     },
     emailVerification: {
       sendVerificationEmail: async ({ user, url }) => {
         //? Do not await - this is to prevent timing attacks
         void emailService.sendVerificationEmail(user.email, url)
-          .catch(err => console.error('[auth] Unexpected error sending verification email:', err));
+          .catch(err => logger.error(
+            `Failed to send verification email to ${user.email}: ${err instanceof Error ? err.message : String(err)}`
+          ));
       },
       sendOnSignUp: true,
       sendOnSignIn: true,
