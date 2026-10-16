@@ -5,7 +5,6 @@ import { EmailService } from "./email.service"
 import { Test, TestingModule } from "@nestjs/testing";
 import { createTransport } from "nodemailer";
 
-const mockCreateTransport = createTransport as jest.MockedFunction<typeof createTransport>;
 const URLOrigin = "http://localhost:4000";
 
 describe("EmailService", () => {
