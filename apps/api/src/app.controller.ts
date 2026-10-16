@@ -3,7 +3,9 @@ import { Controller, Get } from '@nestjs/common';
 import { Roles, Session, UserSession } from '@thallesp/nestjs-better-auth';
 import { AppService } from './app.service';
 import { SessionDto, toSessionDto } from './dto/session.dto';
-import type { auth } from './auth/auth';
+
+// Compile-time-only import (i.e. doesn't pull factory into controller's runtime dependency graph)
+import type { Auth } from './auth/auth';
 
 @Controller()
 export class AppController {
@@ -23,7 +25,7 @@ export class AppController {
 
   @Get('profile')
   @Roles(['learner', 'author'])
-  getProfile(@Session() session: UserSession<typeof auth>): SessionDto {
+  getProfile(@Session() session: UserSession<Auth>): SessionDto {
     return toSessionDto(session);
   }
 

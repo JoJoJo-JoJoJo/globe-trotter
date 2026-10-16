@@ -5,6 +5,8 @@ import { APIError, createAuthMiddleware } from "better-auth/api";
 import { passwordSchema } from "@repo/types";
 import { EmailService } from "src/email/email.service";
 
+export type Auth = ReturnType<typeof createAuth>;
+
 //? Using a factory function so that the email service can be injected as a parameter rather than imported
 export function createAuth(emailService: EmailService) {
   const nodeEnv = process.env.NODE_ENV;
