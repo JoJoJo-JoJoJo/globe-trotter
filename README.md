@@ -118,7 +118,7 @@ For production, set `EMAIL_PROVIDER=resend` and provide `RESEND_API_KEY`. The `E
 
 ## File Structure
 
-```
+```txt
 globetrotter/
 ├── apps/
 |    └── api/
