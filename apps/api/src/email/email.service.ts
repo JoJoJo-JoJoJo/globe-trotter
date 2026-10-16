@@ -29,7 +29,22 @@ export class EmailService {
     //* Default to local setup - stub + noreply@localhost
     this.provider = this.config.get<string>("EMAIL_PROVIDER", "stub");
     this.fromAddress = this.config.get<string>("EMAIL_FROM", "noreply@localhost");
-    this.betterAuthUrl = this.config.get<string>("BETTER_AUTH_URL") as string;
+    const configuredUrl = this.config.get<string>("BETTER_AUTH_URL");
+
+    if (configuredUrl) {
+      this.betterAuthUrl = configuredUrl;
+    } else if (process.env.NODE_ENV === "production") {
+      throw new Error("BETTER_AUTH_URL is required in production");
+    } else {
+      this.betterAuthUrl = "http://localhost:4000";
+    }
+
+    // Validate that "betterAuthUrl" can actually be converted into a URL
+    try {
+      new URL(this.betterAuthUrl);
+    } catch {
+      throw new Error(`BETTER_AUTH_URL is not a valid URL: ${this.betterAuthUrl}`);
+    }
 
     //? Set up relevant provider - provider only chosen once in constructor to avoid re-reading process.env on every email sent
     if (this.provider === "resend") {
@@ -45,14 +60,11 @@ export class EmailService {
       }
       this.resend = new Resend(apiKey);
     } else if (this.provider === "smtp") {
-      this.betterAuthUrl = "http://localhost:4000";
       this.smtp = createTransport({
         host: this.config.get<string>("SMTP_HOST", "localhost"),
         port: this.config.get<number>("SMTP_PORT", 1025),
         secure: false,
       });
-    } else {
-      this.betterAuthUrl = "http://localhost:4000";
     }
     //* "stub" falls through with neither transport configured
   }
