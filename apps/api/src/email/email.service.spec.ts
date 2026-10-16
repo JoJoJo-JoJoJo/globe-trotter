@@ -84,9 +84,6 @@ describe("EmailService", () => {
       }).compile();
 
       service = module.get<EmailService>(EmailService);
-
-      console.log('Module compiled:', module);
-      console.log('Service retrieved:', module.get<EmailService>(EmailService));
     });
 
     it("calls nodemailer sendMail when EMAIL_PROVIDER is smtp", async () => {

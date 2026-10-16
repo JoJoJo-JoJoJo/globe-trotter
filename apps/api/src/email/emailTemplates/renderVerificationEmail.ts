@@ -3,12 +3,16 @@
 import escapeHtml from "escape-html";
 
 export default function renderVerificationEmail(url: string): string {
-  if (!RegExp(String.raw`^${process.env.BETTER_AUTH_URL}`).test(url)) {
-    return `
-      <div style="font-family: system-ui, sora; max-width: 480px; margin: 0 auto; padding: 24px;">
-        <p> URL does not start with the expected origin.<p>
-      </div>
-    `;
+  const betterAuthUrl = process.env.BETTER_AUTH_URL;
+  if (!betterAuthUrl) {
+    throw new Error("BETTER_AUTH_URL environment variable is required.");
+  }
+  
+  const expected = new URL(betterAuthUrl).origin;
+  const actual = new URL(url).origin;
+
+  if (actual !== expected) {
+    throw new Error("Verification URL does not match expected origin");
   }
 
   const safeUrl = escapeHtml(url);

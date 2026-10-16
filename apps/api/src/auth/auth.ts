@@ -55,13 +55,15 @@ export function createAuth(emailService: EmailService) {
       autoSignIn: false,
       onExistingUserSignUp: async ({ user }) => {
         //? Do not await - this is to prevent timing attacks
-        void emailService.sendDuplicateSignUpNotice(user.email);
+        void emailService.sendDuplicateSignUpNotice(user.email)
+          .catch(err => console.error('[auth] Unexpected error sending duplicate sign-up notice:', err));
       },
     },
     emailVerification: {
       sendVerificationEmail: async ({ user, url }) => {
         //? Do not await - this is to prevent timing attacks
-        void emailService.sendVerificationEmail(user.email, url);
+        void emailService.sendVerificationEmail(user.email, url)
+          .catch(err => console.error('[auth] Unexpected error sending verification email:', err));
       },
       sendOnSignUp: true,
       sendOnSignIn: true,
