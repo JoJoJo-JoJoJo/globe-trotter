@@ -88,7 +88,7 @@ pnpm db:migrate
 
 > **Note:** Seeding is not yet wired up (tracked separately). Once available, it will be runnable with `pnpm db:seed` from `/packages/database`.
 
-### 5. Running the API
+## Local API testing
 
 If you want to run the API without the frontend, run:
 
@@ -103,6 +103,18 @@ pnpm --filter @repo/types dev
 ```
 
 > **Note:** The API is run this way due to `@repo/types` now being a built package.
+
+## Local email testing
+
+Emails sent locally are captured by Mailpit. Start the service with:
+
+```bash
+docker compose up -d mailpit
+```
+
+Then visit `http://localhost:8025` to view captured messages. The verification link in the email is clickable and completes the verification flow.
+
+For production, set `EMAIL_PROVIDER=resend` and provide `RESEND_API_KEY`. The `EMAIL_FROM` address must be on a domain verified with Resend. As of the most recent update to this document, there is no verified domain for Globe Trotter, so please use either the stub or SMTP for development.
 
 ## File Structure
 
