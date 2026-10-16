@@ -6,6 +6,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { createTransport } from "nodemailer";
 
 const mockCreateTransport = createTransport as jest.MockedFunction<typeof createTransport>;
+const URLOrigin = "http://localhost:4000";
 
 describe("EmailService", () => {
   let service: EmailService;
@@ -42,14 +43,14 @@ describe("EmailService", () => {
 
     it("does not throw when EMAIL_PROVIDER is stub", async () => {
       await expect(
-        service.sendVerificationEmail("test1@example.dev", "https://example.dev/verify")
+        service.sendVerificationEmail("test1@example.dev", URLOrigin + "/verify")
       ).resolves.toBeUndefined();
     });
 
     it("does not attempt a network call", async () => {
       //? Watch for console.warn() calls - should warn if no provider set up (i.e. EMAIL_PROVIDER=stub)
       const logSpy = jest.spyOn((service as any).logger, "log").mockImplementation();
-      await service.sendVerificationEmail("test1@example.dev", "https://example.dev/verify");
+      await service.sendVerificationEmail("test1@example.dev", URLOrigin + "/verify");
       expect(logSpy).toHaveBeenCalled();
     });
   });
@@ -87,7 +88,7 @@ describe("EmailService", () => {
     });
 
     it("calls nodemailer sendMail when EMAIL_PROVIDER is smtp", async () => {
-      await service.sendVerificationEmail("test1@example.dev", "https://example.dev/verify?token=test");
+      await service.sendVerificationEmail("test1@example.dev", URLOrigin + "/verify?token=test");
 
       expect(mockSendMail).toHaveBeenCalledTimes(1);
       expect(mockSendMail).toHaveBeenCalledWith(
@@ -101,7 +102,7 @@ describe("EmailService", () => {
 
     // In case somebody changes the SMTP config without realizing
     it("createTransport is configured correctly", async () => {
-      await service.sendVerificationEmail("test1@example.dev", "https://example.dev/verify?token=test");
+      await service.sendVerificationEmail("test1@example.dev", URLOrigin + "/verify?token=test");
 
       expect(mockCreateTransport).toHaveBeenCalledWith({
         host: "localhost",

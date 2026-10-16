@@ -5,6 +5,7 @@ import { Resend } from "resend";
 import { createTransport, type Transporter } from "nodemailer";
 import renderVerificationEmail from "./emailTemplates/renderVerificationEmail";
 import renderDuplicateNoticeEmail from "./emailTemplates/renderDupeNoticeEmail";
+import escapeHtml from "escape-html";
 
 // "from" not included since it is decided by env variable only
 interface EmailOptions {
@@ -19,6 +20,7 @@ export class EmailService {
   //* The logger is basically just the console for development, but makes it easy to expand to proper logger in the future. Also it will avoid the mergewatch bot flagging thrown errors as critical and blocking the PR from being merged.
   private readonly logger = new Logger(EmailService.name);
   private readonly provider: string;
+  private readonly betterAuthUrl: string;
   private readonly fromAddress: string;
   private readonly resend?: Resend;
   private readonly smtp?: Transporter;
@@ -27,9 +29,14 @@ export class EmailService {
     //* Default to local setup - stub + noreply@localhost
     this.provider = this.config.get<string>("EMAIL_PROVIDER", "stub");
     this.fromAddress = this.config.get<string>("EMAIL_FROM", "noreply@localhost");
+    this.betterAuthUrl = this.config.get<string>("BETTER_AUTH_URL", "http://localhost:4000");
 
     //? Set up relevant provider - provider only chosen once in constructor to avoid re-reading process.env on every email sent
     if (this.provider === "resend") {
+      if (!this.betterAuthUrl) {
+        throw new Error("BETTER_AUTH_URL environment variable is required.");
+      }
+
       const apiKey = this.config.get<string>("RESEND_API_KEY");
       if (!apiKey || apiKey === "CHANGE_ME_API_KEY") {
         throw new Error(
@@ -48,11 +55,20 @@ export class EmailService {
   }
 
   async sendVerificationEmail(to: string, url: string): Promise<void> {
+    const expected = new URL(this.betterAuthUrl).origin;
+    const actual = new URL(url).origin;
+    
+    if (actual !== expected) {
+      throw new Error("Verification URL does not match expected origin");
+    }
+
+    const safeUrl = escapeHtml(url) as string;
+
     await this.send({
       to,
       subject: "Verify your email address",
-      html: renderVerificationEmail(url),
-      text: `Click the link to verify your email: ${url}`,
+      html: renderVerificationEmail(safeUrl),
+      text: `Click the link to verify your email: ${safeUrl}`,
     });
   }
 
