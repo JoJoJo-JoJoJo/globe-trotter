@@ -6,6 +6,7 @@ import { LabsModule } from './labs/labs.module';
 import { TutorialsModule } from './tutorials/tutorials.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { UserProgressModule } from './user-progress/user-progress.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { AppService } from './app.service';
     AuthModule,
     LabsModule,
     TutorialsModule,
+    UserProgressModule,
   ],
   controllers: [AppController],
   providers: [AppService],
